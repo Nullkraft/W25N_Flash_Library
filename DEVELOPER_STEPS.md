@@ -24,8 +24,8 @@ and has no bearing on electrical behavior or command set.
         of the `WP-E` bit setting (§7.1.2/7.1.3: hardware protection only blocks writes
         when `/WP` is driven to GND). Do not treat `WP-E` as adding a safety net on this
         board. Register-based Block Protect (`BP[3:0]`, `TB`) is the *only* write
-        safeguard available, not merely the primary one — document this in
-        `flash_config.h` so it isn't assumed otherwise later.
+        safeguard available, not merely the primary one — capture this in board-level
+        documentation or board-specific code comments, not in `flash_config.h`.
 
 ## Operating Model
 
@@ -34,6 +34,7 @@ and has no bearing on electrical behavior or command set.
 - [ ] Use internal ECC during the full programming cycle so the calibrated data is programmed and verified with the chip's ECC engine enabled.
 - [ ] Add a separate verify-only utility that compares chip contents against the original programming image without modifying the device.
 - [ ] After programming is complete, use register-based full-array protection as the main safeguard against inadvertent writes.
+- [ ] Never use `SR-2.SR1-L` in this project. We want reversible accidental-write protection, not OTP-locking of the protection register.
 
 ## Datasheet Facts To Preserve
 
@@ -56,6 +57,7 @@ and has no bearing on electrical behavior or command set.
 - [ ] Create `include/flash_config.h` for manufacturer-stated hardware values only.
 - [ ] Put the datasheet-defined hardware facts in `flash_config.h`: JEDEC IDs, page size, spare size, full buffer size, pages per block, block count, total capacity, erase-block size, address widths, default read mode, ECC default, and timing constants stated by the manufacturer.
 - [ ] Keep `flash_config.h` free of behavior and protocol helpers; it should be configuration data only.
+- [ ] Keep board-specific wiring and protection policy out of `flash_config.h`; record those assumptions in board-level documentation or in comments near the runtime/programming utility entry points.
 - [ ] Create a separate constants file for protocol items such as opcodes and register addresses, for example `include/constants.h`.
 - [ ] Create a register/bit-definition file for `SR-1`, `SR-2`, and `SR-3`, for example `include/registers.h`.
 - [ ] Create one implementation file for transport-independent device logic, for example `src/device.cpp`.
@@ -78,7 +80,8 @@ and has no bearing on electrical behavior or command set.
       "Default values after power up and Device Reset" table, `BP[3:0]`, `TB`, `SRP[1:0]`,
       `WP-E`, `OTP-E`, `ECC-E`, and `BUF` all show "No Change" after a Reset command —
       only SR-3 status flags (ECC status, P-FAIL, E-FAIL, WEL) and BUSY are affected.
-      Only an actual VCC power cycle re-applies the full-array-protected shipment defaults.
+      This project must never use `SR1-L`; under that policy, an actual VCC power cycle
+      re-applies the full-array-protected shipment defaults.
 - [ ] Implement `read_jedec_id()` with opcode `0x9F` plus the required dummy byte, and verify `EF AA 21`.
 - [ ] Implement `read_status(register_address)` using opcode `0x0F` or `0x05`.
 
@@ -112,7 +115,9 @@ and has no bearing on electrical behavior or command set.
 - [ ] Implement `write_status(register_address, value)` using opcode `0x1F` or `0x01` inside the programming utility support layer.
 - [ ] Implement `write_enable()` with opcode `0x06`, then verify `SR-3.WEL=1`.
 - [ ] Implement `write_disable()` with opcode `0x04`, then verify `SR-3.WEL=0`.
-- [ ] At the start of the programming cycle, clear full-array protection in `SR-1` because the datasheet powers up with the full array protected.
+- [ ] At the start of the programming cycle, read `SR-1` and then explicitly write the
+      intended unprotected programming state. Do not assume the current `BP[3:0]`/`TB`
+      bits still match power-up defaults from a previous session.
 - [ ] When writing `SR-1`, write `SRP1`/`SRP0` explicitly on every write (the instruction
       writes the whole register byte at once). Never allow `SRP1,SRP0=(1,0)` unintentionally —
       that combination is Power Lock-Down and makes `SR-1` unwritable (including re-protecting
