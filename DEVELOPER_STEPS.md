@@ -69,7 +69,8 @@ and has no bearing on electrical behavior or command set.
 ## Transport Layer
 
 - [ ] Define a minimal SPI transport contract that can transmit command-only, command-plus-write-data, and command-plus-read-data transactions.
-- [ ] Include an explicit busy-wait hook or delay hook so the core driver can poll status and respect erase/program/read transfer timing.
+- [ ] Include an explicit busy-poll hook with timeout so the core driver can read `SR-3`
+      until `BUSY=0`; use datasheet timing values as timeout limits, not as unconditional delays.
 - [ ] Keep the transport focused on standard 1-bit serial SPI because the board is not wired for Dual/Quad operation.
 
 ## Bring-Up And Identification
