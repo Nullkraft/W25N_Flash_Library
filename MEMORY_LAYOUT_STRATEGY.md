@@ -6,14 +6,14 @@ Use the `W25N01GVZEIG` in a way that:
 
 - keeps runtime address calculations simple
 - uses fixed logical addresses for lookup tables
-- relies on the chip's internal BBM to preserve logical continuity
+- relies on the chip's internal (Bad Block Mgmt) BBM to preserve logical continuity
 - supports the expected two-write life cycle
 - allows later service checks on aging chips
 
 Note:
-    "Fixed logical addresses for lookup tables" means your software should treat each
-    frequency step table as living at a fixed address in the chip’s normal address space,
-    regardless of which physical NAND block actually holds it underneath.
+  "Fixed logical addresses for lookup tables" means your software should treat each
+  frequency step table as living at a fixed address in the chip’s normal address
+  space, regardless of which physical NAND block actually holds it underneath.
 
   Examples from the inherited 128 MiB layout:
 
@@ -22,15 +22,15 @@ Note:
   - 3 kHz table starts at logical address `0x03000000`
 
   The intent is not to force generic multiplication into the runtime path.
-  The intent is to keep the table bases fixed so the remaining address math can be chosen
-  to be cheap, such as:
+  The intent is to keep the table bases fixed so the remaining address math can
+  be chosen to be cheap, such as:
 
   - base address plus direct offset
   - base address plus shift-derived offset
   - base address plus shift/add offset
 
-  For example, if the entry size is a power of two, scaling can be done with a left shift
-  instead of a general multiply.
+  For example, if the entry size is a power of two, scaling can be done with a
+  left shift instead of a general multiply.
 
   So “fixed logical address” means:
 
@@ -40,10 +40,11 @@ Note:
 
   Why that can still work:
 
-  - if the chip remaps a bad block through BBM, the original logical block number still works
+  - if the chip remaps a bad block through BBM, the logical block number still works
   - the chip internally redirects that logical block to a replacement physical block
 
-  So your code still reads the same logical address, even though the chip may be pulling the data from a different physical block internally.
+  So your code still reads the same logical address, even though the chip may be
+  pulling the data from a different physical block internally.
 
   Short version:
 
@@ -61,7 +62,10 @@ This design assumes the chip is normally written only twice:
 
 After that, normal operation is read-only.
 
-Because the chip is not expected to be rewritten often, the main service concern is not normal wear from heavy rewrite traffic. The main concern is long-term aging, detection of newly bad blocks, and whether enough BBM/LUT capacity remains for continued safe use.
+Because the chip is not expected to be rewritten often, the main service concern
+is not normal wear from heavy rewrite traffic. The main concern is long-term
+aging, detection of newly bad blocks, and whether enough BBM/LUT capacity remains
+for continued safe use.
 
 ## Core Model
 
@@ -74,11 +78,13 @@ That means:
 - runtime code uses those fixed addresses directly
 - runtime code does not need to understand physical block remapping
 
-The chip's internal Bad Block Management is expected to keep logical block addresses usable even when specific physical blocks are replaced.
+The chip's internal Bad Block Management is expected to keep logical block addresses
+usable even when specific physical blocks are replaced.
 
 ## Why This Simpler Model Works
 
-The W25N01GV provides an internal BBM LUT that remaps a bad logical block to a good physical block.
+The W25N01GV provides an internal BBM LUT that remaps a bad logical block to a good
+physical block.
 
 Practical meaning:
 
@@ -86,16 +92,17 @@ Practical meaning:
 - a remapped block still appears at the original logical address
 - your image layout can remain fixed even if the underlying physical storage changes
 
-So long as BBM capacity is still available, your image does not need to care about physical fragmentation.
+So long as BBM capacity is still available, your image does not need to care about
+physical fragmentation.
 
 ## Recommended Image Layout
 
 Define the image once using fixed logical areas.
 
-The `W25N01GV` has a 1-Gbit main array: `134,217,728` bytes (`128 MiB`). The
-older `WN2A_FlashProgrammer` project defines the following 128 MiB layout for
-this capacity. Each table covers `0 MHz` through `3000 MHz`, inclusive, and
-each entry is one 8-byte tuple.
+The `W25N01GV` has a 1-Gbit main array: `134,217,728` bytes (`128 MiB`). The older
+`WN2A_FlashProgrammer` project defines the following 128 MiB layout for this capacity.
+Each table covers `0 MHz` through `3000 MHz`, inclusive, and each entry is one 8-byte
+tuple.
 
 | Step | Base address | Base page | Entry count | Last byte used |
 | ---: | ---: | ---: | ---: | ---: |
@@ -199,10 +206,11 @@ All table bases are page-aligned, but they are not all erase-block-aligned. The
 Independent table erasure is therefore not supported by this inherited map;
 that is consistent with the full-image programming and service-rewrite model.
 
-Avoid designing the layout so runtime needs a general multiply if that is what you are
-trying to eliminate.
+Avoid designing the layout so runtime needs a general multiply if that is what you
+are trying to eliminate.
 
-No runtime bad-block translation layer is needed if the chip's BBM has already preserved the logical address space.
+No runtime bad-block translation layer is needed if the chip's BBM has already
+preserved the logical address space.
 
 ## Additional Information Placement
 
@@ -229,7 +237,8 @@ BBM does not change:
 - the fixed logical image layout
 - your runtime lookup math
 
-So for your layout strategy, BBM is expected to hide physical relocation from the normal programming and read cycle.
+So for your layout strategy, BBM is expected to hide physical relocation from the
+normal programming and read cycle.
 
 ## Service Strategy For Aging Chips
 
@@ -243,7 +252,8 @@ If a board has been in service for many years and starts showing trouble:
 6. verify the final image
 7. restore full-array protection
 
-This is the safest model because BBM updates and aging checks should be treated as service actions, not as something the runtime application tries to manage on the fly.
+This is the safest model because BBM updates and aging checks should be treated as
+service actions, not as something the runtime application tries to manage on the fly.
 
 ## Source Of Truth
 
@@ -254,7 +264,8 @@ Keep an off-chip golden image as the source of truth:
 - uncalibrated image for production flow if needed
 - calibrated image for final programming
 
-Then if service work is required later, the utility can rebuild the flash contents from the known-good source image after BBM or bad-block maintenance.
+Then if service work is required later, the utility can rebuild the flash contents
+from the known-good source image after BBM or bad-block maintenance.
 
 ## BBM Capacity Policy
 
@@ -319,4 +330,6 @@ The recommended simple model is:
 - chip BBM used to preserve logical continuity
 - golden image kept off-chip for reprogramming after service checks
 
-With that model, your image layout stays simple and stable, and BBM handles the physical remapping underneath it until the chip ages far enough that replacement is the better answer.
+With that model, your image layout stays simple and stable, and BBM handles the
+physical remapping underneath it until the chip ages far enough that replacement
+is the better answer.
