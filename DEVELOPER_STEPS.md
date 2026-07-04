@@ -13,6 +13,16 @@ The `-TR` suffix is Digikey's own tape-and-reel packaging/quantity designator, a
 on top of the manufacturer part number. It is not part of Winbond's ordering code (§12)
 and has no bearing on electrical behavior or command set.
 
+## Documentation Authority
+
+- [ ] Use the Winbond datasheet as the authority for chip commands, registers, geometry,
+      timing, and electrical behavior.
+- [ ] Use `MEMORY_LAYOUT_STRATEGY.md` as the authority for this project's image layout,
+      replacement-block reserve, tuple format, and BBM capacity policy.
+- [ ] Treat `Bad Blocks & Logical Memory Addresses.md` as background discussion only.
+      Where it describes alternatives that conflict with `MEMORY_LAYOUT_STRATEGY.md`,
+      the final memory-layout strategy takes precedence.
+
 ## Board Wiring Assumptions
 
 - [ ] Standard single-wire SPI only (Mode 0, matching Arduino `SPI` library default).
@@ -60,10 +70,14 @@ and has no bearing on electrical behavior or command set.
 - [ ] Keep board-specific wiring and protection policy out of `flash_config.h`; record those assumptions in board-level documentation or in comments near the runtime/programming utility entry points.
 - [ ] Create a separate constants file for protocol items such as opcodes and register addresses, for example `include/constants.h`.
 - [ ] Create a register/bit-definition file for `SR-1`, `SR-2`, and `SR-3`, for example `include/registers.h`.
+- [ ] Create `include/image_layout.h` for image-level types, fixed addresses, tuple format,
+      and public address helpers; do not put these project-specific values in `flash_config.h`.
 - [ ] Create one implementation file for transport-independent device logic, for example `src/device.cpp`.
-- [ ] Create one implementation file for optional bad-block and spare-area helpers, for example `src/bad_blocks.cpp`.
+- [ ] Create `src/image_layout.cpp` for the table descriptors and non-trivial image-layout validation.
+- [ ] Create `include/bad_blocks.h` and `src/bad_blocks.cpp` for bad-block marker and BBM LUT support used by programming and service utilities.
 - [ ] Create a separate programming utility source file for erase/program/update operations, for example `tools/program_flash.cpp`.
 - [ ] Create a separate verify-only utility source file for golden-image comparison, for example `tools/verify_flash.cpp`.
+- [ ] Create a separate bad-block service utility source file, for example `tools/service_bad_blocks.cpp`.
 - [ ] Keep test code separate from driver code from the start, for example under `tests/`.
 
 ## Transport Layer
@@ -109,6 +123,28 @@ and has no bearing on electrical behavior or command set.
 - [ ] Add support for reading spare bytes explicitly so bad-block markers and ECC/spare metadata can be inspected.
 - [ ] After reads with internal ECC enabled, inspect `SR-3.ECC[1:0]` and surface three states to the caller: clean, corrected, uncorrectable.
 - [ ] If continuous read is added later, implement it as a separate path because `BUF=0` changes read semantics and ECC reporting behavior.
+
+## Image Layout
+
+- [ ] Define all 11 fixed lookup-table descriptors from `MEMORY_LAYOUT_STRATEGY.md`:
+      step size, base address, base page, entry count, and last byte used.
+- [ ] Define the 8-byte tuple as two little-endian 32-bit words and preserve the
+      documented `F`, `M`, `N`, `Ref`, and special-command sentinel encoding.
+- [ ] Implement tuple byte addressing as `base | (index << 3)` and derive page and
+      column addresses with `byte_address >> 11` and `byte_address & 0x07FF`.
+- [ ] Reject an index outside the selected table before calculating or reading an address.
+- [ ] Validate that every table base is page-aligned, every table remains within its
+      assigned range, tables do not overlap, and OR is equivalent to addition for every
+      table's maximum shifted offset.
+- [ ] Reserve the table area through `0x046F7FFF`.
+- [ ] Reserve `0x046F8000` through `0x06FFFFFF` as unassigned image space.
+- [ ] Reserve blocks `896` through `999` (`0x07000000` through `0x07CFFFFF`) for
+      configuration and technician strings; define their record format, versioning,
+      bounds, and integrity checks before using the area.
+- [ ] Reserve blocks `1000` through `1023` (`0x07D00000` through `0x07FFFFFF`)
+      exclusively as the replacement-block pool.
+- [ ] Keep scan-resolution and lookup-table selection policy outside this driver project;
+      this layer accepts a table and record index and returns the corresponding tuple.
 
 ## Programming Utility Path
 
@@ -156,8 +192,18 @@ and has no bearing on electrical behavior or command set.
 - [ ] For each block, inspect page `0` byte `0` of the main area and byte `0` of the spare area; non-`0xFF` means bad block.
 - [ ] Keep a software bad-block table even if the hardware BBM LUT is used.
 - [ ] Expose the BBM LUT status bit `SR-3.LUT-F`.
-- [ ] Implement optional `read_bbm_lut()` with opcode `0xA5`.
-- [ ] Implement optional `bad_block_management(lba, pba)` with opcode `0xA1` only after the basic driver is stable.
+- [ ] Implement `read_bbm_lut()` with opcode `0xA5` for mandatory programming and service inspection.
+- [ ] Decode all 20 LUT entries and distinguish available, enabled/valid, and
+      enabled/invalid entries.
+- [ ] Count every slot that is no longer available as consumed, including an invalidated
+      entry that cannot be reused.
+- [ ] Warn whenever inspection finds 18 or more consumed LUT slots.
+- [ ] Warn before and after adding a link that raises the consumed count to 18, 19, or 20;
+      report two hardware slots remaining at 18, one at 19, and none at 20.
+- [ ] Treat 18 or more consumed LUT slots as a chip-replacement warning.
+- [ ] Select replacement PBAs only from reserved blocks `1000` through `1023`, after
+      confirming the candidate is good, unused by the image, and not already referenced.
+- [ ] Implement `bad_block_management(lba, pba)` with opcode `0xA1` only after the basic driver is stable.
 
 ## API Design
 
@@ -169,6 +215,12 @@ and has no bearing on electrical behavior or command set.
 ## Tests And Bring-Up Sequence
 
 - [ ] Add unit tests for opcode packing, register-bit decoding, block-to-page conversion, and page/column bounds checks.
+- [ ] Add unit tests for all table descriptors, tuple bounds, table overlap, image-range
+      limits, and OR-versus-addition address equivalence.
+- [ ] Add unit tests that enforce the configuration/string boundary at block `999` and
+      the replacement-block reserve at blocks `1000` through `1023`.
+- [ ] Add unit tests for all BBM LUT entry states, consumed-slot counting, and warnings
+      at 18, 19, and 20 consumed slots.
 - [ ] Add a runtime integration test sequence for a known-good page: reset, identify, read page, verify payload, verify spare-area access, report ECC state.
 - [ ] Add a programming-utility integration test sequence: reset, identify, scan bad blocks, unprotect, erase block, program page, read back, verify payload, verify spare-area access.
 - [ ] Add a test that confirms `WEL` clears after program and erase in the programming utility path.
