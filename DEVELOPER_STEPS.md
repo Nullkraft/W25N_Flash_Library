@@ -1,8 +1,31 @@
 # W25N01GVZEIG Driver Steps
 
-Target device: `W25N01GVZEIG`
+Target device: `W25N01GVZEIG` (Digikey part number `W25N01GVZEIG-TR`)
 
-Assumption: distributor suffix `TR` is packaging, not a different command set. The electrical and protocol behavior here is the `W25N01GVxxxG` device from the datasheet, which powers up with `BUF=1`.
+**Confirmed against Winbond datasheet (Rev O, Sept 2019), §12.1 ordering table:**
+`W25N01GVZEIG` decodes to 8-pad WSON 8x6mm package, Industrial grade (-40°C to +85°C),
+Green/RoHS, and — most relevant to the driver — **`G` variant: BUF=1 (Buffer Read Mode)
+is the default after power-up, and is writable to 0.** Instruction Set Table 2 (Buffer
+Read default) is the correct command-format reference, not Table 1 (Continuous Read /
+`xxxT` default).
+
+The `-TR` suffix is Digikey's own tape-and-reel packaging/quantity designator, appended
+on top of the manufacturer part number. It is not part of Winbond's ordering code (§12)
+and has no bearing on electrical behavior or command set.
+
+## Board Wiring Assumptions
+
+- [ ] Standard single-wire SPI only (Mode 0, matching Arduino `SPI` library default).
+      Dual/Quad opcodes (`0x3B/0x3C/0x6B/0x6C/0xBB/0xBC/0xEB/0xEC/0x32/0x34`) are out
+      of scope for this driver and must not be implemented or exposed.
+- [ ] `/WP` and `/HOLD` are hard-tied to VCC on this board.
+  - [ ] `/HOLD` tied high means the Hold function is simply unused; no driver support needed.
+  - [ ] `/WP` tied high means **Hardware Write Protection can never engage**, regardless
+        of the `WP-E` bit setting (§7.1.2/7.1.3: hardware protection only blocks writes
+        when `/WP` is driven to GND). Do not treat `WP-E` as adding a safety net on this
+        board. Register-based Block Protect (`BP[3:0]`, `TB`) is the *only* write
+        safeguard available, not merely the primary one — document this in
+        `flash_config.h` so it isn't assumed otherwise later.
 
 ## Operating Model
 
@@ -51,12 +74,23 @@ Assumption: distributor suffix `TR` is packaging, not a different command set. T
 
 - [ ] Implement `reset()` with opcode `0xFF`.
 - [ ] After reset, poll status register `SR-3` until `BUSY=0` before accepting the device as ready.
+- [ ] Do not assume `reset()` restores shipment-default protection. Per the datasheet's
+      "Default values after power up and Device Reset" table, `BP[3:0]`, `TB`, `SRP[1:0]`,
+      `WP-E`, `OTP-E`, `ECC-E`, and `BUF` all show "No Change" after a Reset command —
+      only SR-3 status flags (ECC status, P-FAIL, E-FAIL, WEL) and BUSY are affected.
+      Only an actual VCC power cycle re-applies the full-array-protected shipment defaults.
 - [ ] Implement `read_jedec_id()` with opcode `0x9F` plus the required dummy byte, and verify `EF AA 21`.
 - [ ] Implement `read_status(register_address)` using opcode `0x0F` or `0x05`.
 
 ## Initialization
 
-- [ ] Implement an `initialize()` sequence that performs reset, JEDEC-ID check, checks BP[3:0]/TB for full-array protection and status-register snapshot.
+- [ ] Implement an `initialize()` sequence that performs reset, JEDEC-ID check, and status-register snapshot.
+- [ ] Validate, not just record, the status-register snapshot: confirm `BP[3:0]`/`TB` indicate
+      full-array protection and surface a fault/log entry if they don't. Because `/WP` is
+      tied high on this board (see Board Wiring Assumptions) and `reset()` does not restore
+      protection bits, register-based protection is the only thing standing between a stray
+      write and the array — an interrupted prior programming session that left the array
+      unprotected would otherwise go undetected on the next boot.
 - [ ] Do not clear array protection during normal runtime initialization; the datasheet default full-array protection is acceptable for a read-only runtime model.
 - [ ] Do not change ECC policy during normal runtime initialization; ECC setup belongs to the dedicated programming utility.
 - [ ] Keep `WP-E=0` unless there is a specific reason to change it; on this board `/WP` and `/HOLD` are held high and are not the primary write-protection mechanism.
@@ -79,6 +113,19 @@ Assumption: distributor suffix `TR` is packaging, not a different command set. T
 - [ ] Implement `write_enable()` with opcode `0x06`, then verify `SR-3.WEL=1`.
 - [ ] Implement `write_disable()` with opcode `0x04`, then verify `SR-3.WEL=0`.
 - [ ] At the start of the programming cycle, clear full-array protection in `SR-1` because the datasheet powers up with the full array protected.
+- [ ] When writing `SR-1`, write `SRP1`/`SRP0` explicitly on every write (the instruction
+      writes the whole register byte at once). Never allow `SRP1,SRP0=(1,0)` unintentionally —
+      that combination is Power Lock-Down and makes `SR-1` unwritable (including re-protecting
+      the array) until the next VCC power cycle.
+- [ ] Before issuing a program or erase command, check the target address against the
+      current `BP[3:0]`/`TB` protection table (§7.4) in software. `P-FAIL`/`E-FAIL` cannot
+      distinguish a protected-region rejection from a genuine timeout after the fact — both
+      set the same bit — so "protected-region rejection" as a distinct status must be
+      determined by a pre-check, not inferred from the failure bit alone.
+- [ ] Remember `WEL` also clears after `Page Data Read (0x13)`, not only after Program
+      Execute/Block Erase/Write Disable. Do not insert a page read between `write_enable()`
+      and `program_execute()`/`block_erase()` — it will silently drop `WEL` back to 0 and
+      the following program/erase instruction will not be accepted.
 - [ ] Explicitly program with `ECC-E=1` during the full-chip programming cycle so the device generates and stores ECC parity as pages are written.
 - [ ] Implement `load_program_data(column_address, src, len)` with opcode `0x02`.
 - [ ] Implement `random_load_program_data(column_address, src, len)` with opcode `0x84` for patching portions of the buffer without clearing untouched bytes.
@@ -97,6 +144,7 @@ Assumption: distributor suffix `TR` is packaging, not a different command set. T
 
 ## Bad Blocks And NAND-Specific Rules
 
+- [ ] Never register the same block address as multiple PBAs in Bad Block Management — the datasheet states this is prohibited and may cause unexpected behavior.
 - [ ] Never erase the original factory marker information before the initial scan has been captured.
 - [ ] On first-use tooling, scan factory bad-block markers before any erase/program pass.
 - [ ] For each block, inspect page `0` byte `0` of the main area and byte `0` of the spare area; non-`0xFF` means bad block.
