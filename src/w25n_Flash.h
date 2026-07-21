@@ -7,4 +7,5 @@ class W25N_Flash {
   public:
     uint8_t jedecIDcmd = 0x9F;
     uint32_t readManufID(uint8_t ID);
+    uint32_t getJedecID();
 };
