@@ -1,14 +1,20 @@
+#include <Arduino.h>
 #include <stdint.h>
 
 class W25N_Flash {
   private:
-    const static uint32_t manufID = 0xAA21;
+    const static uint16_t jedecIDcmd = 0x9F00;
+    uint8_t manufID = 0xF7;
+    uint8_t deviceIDHigh = 0;
+    uint8_t deviceIDLow = 0;
+
+    void readManufID(uint16_t ID, uint8_t SEL_FLASH);
 
   public:
     W25N_Flash();
-    uint8_t jedecIDcmd = 0x9F;
-    uint32_t readManufID(uint8_t ID);
-    uint32_t getJedecID();
+    void begin(uint8_t flash_sel);
+    uint8_t getManufID();
+    // uint8_t getDeviceID();
 
     void spiWriteRegister(uint8_t sel_pin, uint32_t value);
 };
