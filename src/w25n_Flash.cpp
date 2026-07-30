@@ -26,3 +26,7 @@ void W25N_Flash::spiWriteRegister(uint8_t sel_pin, uint32_t value) {
   // ToDo: Implement flash writes
 }
 
+uint16_t W25N_Flash::getDeviceID() {
+  uint16_t deviceID = (deviceIDHigh << 8 | deviceIDLow);
+  return deviceID;
+}

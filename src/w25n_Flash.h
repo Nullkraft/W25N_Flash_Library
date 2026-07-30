@@ -4,7 +4,7 @@
 class W25N_Flash {
   private:
     const static uint16_t jedecIDcmd = 0x9F00;
-    uint8_t manufID = 0xF7;
+    uint8_t manufID = 0;
     uint8_t deviceIDHigh = 0;
     uint8_t deviceIDLow = 0;
 
@@ -14,7 +14,7 @@ class W25N_Flash {
     W25N_Flash();
     void begin(uint8_t flash_sel);
     uint8_t getManufID();
-    // uint8_t getDeviceID();
+    uint16_t getDeviceID();
 
     void spiWriteRegister(uint8_t sel_pin, uint32_t value);
 };
