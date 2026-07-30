@@ -18,6 +18,10 @@ void W25N_Flash::readManufID(uint16_t ID) {
   SPI.endTransaction();
 }
 
+void W25N_Flash::readStatusReg(uint8_t instrCode) {
+  Serial.println("readStatusReg");
+}
+
 uint8_t W25N_Flash::getManufID() {
   return W25N_Flash::manufID;    // Returns 0 if read failed
 }

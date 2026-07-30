@@ -9,6 +9,7 @@ class W25N_Flash {
     uint8_t deviceIDLow = 0;
 
     void readManufID(uint16_t ID);
+    void readStatusReg(uint8_t instrCode);
 
   public:
     W25N_Flash();
