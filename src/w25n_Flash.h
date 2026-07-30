@@ -8,11 +8,11 @@ class W25N_Flash {
     uint8_t deviceIDHigh = 0;
     uint8_t deviceIDLow = 0;
 
-    void readManufID(uint16_t ID, uint8_t SEL_FLASH);
+    void readManufID(uint16_t ID);
 
   public:
     W25N_Flash();
-    void begin(uint8_t flash_sel);
+    void begin();
     uint8_t getManufID();
     uint16_t getDeviceID();
 

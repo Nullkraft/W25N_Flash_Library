@@ -5,13 +5,13 @@ W25N_Flash::W25N_Flash() {
   // ctor
 }
 
-void W25N_Flash::begin(uint8_t flash_sel) {
-  readManufID(jedecIDcmd, flash_sel);
+void W25N_Flash::begin() {
+  readManufID(jedecIDcmd);
 }
 
-void W25N_Flash::readManufID(uint16_t ID, uint8_t flash_sel) {
+void W25N_Flash::readManufID(uint16_t ID) {
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
-  SPI.transfer16(jedecIDcmd);
+  SPI.transfer16(ID);
   manufID = SPI.transfer(0x00);
   deviceIDHigh = SPI.transfer(0x00);
   deviceIDLow = SPI.transfer(0x00);
