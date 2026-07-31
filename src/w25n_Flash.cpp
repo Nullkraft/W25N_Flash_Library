@@ -12,9 +12,8 @@ void W25N_Flash::begin() {
 void W25N_Flash::readManufID(uint16_t ID) {
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
   SPI.transfer16(ID);
-  manufID = SPI.transfer(0x00);
-  deviceIDHigh = SPI.transfer(0x00);
-  deviceIDLow = SPI.transfer(0x00);
+  manufID = SPI.transfer(0x0);
+  deviceID = SPI.transfer16(0x0);
   SPI.endTransaction();
 }
 
@@ -35,6 +34,5 @@ void W25N_Flash::spiWriteRegister(uint8_t sel_pin, uint32_t value) {
 }
 
 uint16_t W25N_Flash::getDeviceID() {
-  uint16_t deviceID = (deviceIDHigh << 8 | deviceIDLow);
   return deviceID;
 }

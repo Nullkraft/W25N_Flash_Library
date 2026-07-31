@@ -5,8 +5,7 @@ class W25N_Flash {
   private:
     const static uint16_t jedecIDcmd = 0x9F00;
     uint8_t manufID = 0;
-    uint8_t deviceIDHigh = 0;
-    uint8_t deviceIDLow = 0;
+    uint16_t deviceID = 0;
 
     void readManufID(uint16_t ID);
     void readStatusReg(uint8_t instrCode);
