@@ -19,11 +19,15 @@ void W25N_Flash::readManufID(uint16_t ID) {
 }
 
 void W25N_Flash::readStatusReg(uint8_t instrCode) {
-  Serial.println("readStatusReg");
+  Serial.println(F("Status register report: <value>"));
 }
 
 uint8_t W25N_Flash::getManufID() {
   return W25N_Flash::manufID;    // Returns 0 if read failed
+}
+
+void W25N_Flash::reportStatusReg(uint8_t cmd_value) {
+  readStatusReg(cmd_value);
 }
 
 void W25N_Flash::spiWriteRegister(uint8_t sel_pin, uint32_t value) {

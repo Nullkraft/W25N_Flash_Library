@@ -16,6 +16,7 @@ class W25N_Flash {
     void begin();
     uint8_t getManufID();
     uint16_t getDeviceID();
+    void reportStatusReg(uint8_t cmd_value);
 
     void spiWriteRegister(uint8_t sel_pin, uint32_t value);
 };
