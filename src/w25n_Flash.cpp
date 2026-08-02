@@ -25,14 +25,16 @@ void W25N_Flash::readStatusReg(uint8_t instrCode) {
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
   SPI.transfer(instrCode);
   SPI.transfer(0xA0);
-  // SRValue = SPI.transfer(0x0);
-  Serial.print(F("Status register report: "));
-  Serial.println(SRValue);
+  SRValue = SPI.transfer(0x0);
   SPI.endTransaction();
 }
 
 uint8_t W25N_Flash::getManufID() {
-  return W25N_Flash::manufID;    // Returns 0 if read failed
+  return manufID;    // Returns 0 if read failed
+}
+
+uint8_t W25N_Flash::getStatReg() {
+  return SRValue;
 }
 
 void W25N_Flash::spiWriteRegister(uint8_t sel_pin, uint32_t value) {
