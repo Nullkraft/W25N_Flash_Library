@@ -1,5 +1,66 @@
+#include <SPI.h>
 #include "w25n_Flash.h"
 
-uint32_t W25N_Flash::readManufID(uint8_t ID) {
-  // do nothing
+W25N_Flash::W25N_Flash() {
+  // ctor
+}
+
+void W25N_Flash::begin() {
+  readManufID(jedecIDcmd);
+}
+
+void W25N_Flash::readManufID(uint16_t ID) {
+  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer16(ID);
+  manufID = SPI.transfer(0x0);
+  deviceID = SPI.transfer16(0x0);
+  SPI.endTransaction();
+}
+
+void W25N_Flash::readProtReg(uint8_t instrCode) {
+  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer(instrCode);
+  SPI.transfer(0xA0);
+  PRValue = SPI.transfer(0x0);
+  SPI.endTransaction();
+}
+
+void W25N_Flash::loadProtectRegister() {
+  readProtReg(0x05);
+}
+
+void W25N_Flash::reportStatusReg(uint8_t cmd_value, uint8_t regAdd) {
+  readStatusReg(cmd_value, regAdd);
+}
+
+void W25N_Flash::readStatusReg(uint8_t instrCode, uint8_t regAdd) {
+  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer(instrCode);
+  SPI.transfer(regAdd);
+  SRValue = SPI.transfer(0x0);
+  SPI.endTransaction();
+}
+
+uint8_t W25N_Flash::getManufID() {
+  return manufID;    // Returns 0 if read failed
+}
+
+uint8_t W25N_Flash::getProtReg() {
+  return PRValue;
+}
+
+uint8_t W25N_Flash::getConfReg() {
+  return CRValue;
+}
+
+uint8_t W25N_Flash::getStatReg() {
+  return SRValue;
+}
+
+void W25N_Flash::spiWriteRegister(uint8_t sel_pin, uint32_t value) {
+  // ToDo: Implement flash writes
+}
+
+uint16_t W25N_Flash::getDeviceID() {
+  return deviceID;
 }

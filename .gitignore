@@ -1,4 +1,10 @@
 documents/
+.vscode/
+include/
+lib/
+
+# platformio folders and files
+.pio/
 
 # Design notes
 Bad Blocks & Logical Memory Addresses.md
