@@ -24,11 +24,11 @@ class W25N_Flash {
     uint8_t getConfReg();
     uint8_t getStatReg();
 
-    void loadStatusReg();
-
     void spiWriteRegister(uint8_t sel_pin, uint32_t value);
 
-    void loadProtectRegister();
+    void loadStatusReg(uint8_t instructionCode);
 
-    void loadConfigRegister();
+    void loadProtectRegister(uint8_t instructionCode);
+
+    void loadConfigRegister(uint8_t instructionCode);
 };
