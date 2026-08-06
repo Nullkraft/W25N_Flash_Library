@@ -20,7 +20,7 @@ void W25N_Flash::readManufID(uint16_t ID) {
 void W25N_Flash::readProtReg(uint8_t instrCode) {
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
   SPI.transfer(instrCode);
-  SPI.transfer(0xA0);
+  SPI.transfer(protectRegisterAddress);
   PRValue = SPI.transfer(0x0);
   SPI.endTransaction();
 }
@@ -28,8 +28,16 @@ void W25N_Flash::readProtReg(uint8_t instrCode) {
 void W25N_Flash::readConfReg(uint8_t instrCode) {
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
   SPI.transfer(instrCode);
-  SPI.transfer(0xB0);
+  SPI.transfer(configureRegisterAddress);
   CRValue = SPI.transfer(0x0);
+  SPI.endTransaction();
+}
+
+void W25N_Flash::readStatusReg(uint8_t instrCode) {
+  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer(instrCode);
+  SPI.transfer(statusRegisterAddress);
+  SRValue = SPI.transfer(0x0);
   SPI.endTransaction();
 }
 
@@ -43,14 +51,6 @@ void W25N_Flash::loadConfigRegister() {
 
 void W25N_Flash::loadStatusReg() {
   readStatusReg(0x05);
-}
-
-void W25N_Flash::readStatusReg(uint8_t instrCode) {
-  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
-  SPI.transfer(instrCode);
-  SPI.transfer(0xC0);
-  SRValue = SPI.transfer(0x0);
-  SPI.endTransaction();
 }
 
 uint8_t W25N_Flash::getManufID() {

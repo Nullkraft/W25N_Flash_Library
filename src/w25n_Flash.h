@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <stdint.h>
+#include "command_Codes.h"
 
 class W25N_Flash {
   private:
-    const static uint16_t jedecIDcmd = 0x9F00;
     uint8_t manufID = 0xF;
     uint16_t deviceID = 0xFF;
     uint8_t PRValue = 0x42;
