@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <stdint.h>
-#include "command_Codes.h"
+#include "w25n_command_codes.h"
 
 class W25N_Flash {
   private:
