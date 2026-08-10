@@ -1,34 +1,18 @@
-#include <Arduino.h>
+#pragma once
+
 #include <stdint.h>
+
 #include "w25n_command_codes.h"
+#include "w25n_transport.h"
 
 class W25N_Flash {
-  private:
-    uint8_t manufID = 0xF;
-    uint16_t deviceID = 0xFF;
-    uint8_t PRValue = 0x42;
-    uint8_t CRValue = 0x69;
-    uint8_t SRValue = 0x67;
+public:
+    explicit W25N_Flash(uint8_t csPin, SPIClass& spi = SPI);
 
-    void readManufID(uint16_t ID);
-    void readProtReg(uint8_t ID);
-    void readConfReg(uint8_t ID);
-    void readStatusReg(uint8_t ID);
-
-  public:
-    W25N_Flash();
     void begin();
-    uint8_t getManufID();
-    uint16_t getDeviceID();
-    uint8_t getProtReg();
-    uint8_t getConfReg();
-    uint8_t getStatReg();
+    void readJedecId(uint8_t& manufacturerId, uint16_t& deviceId);
+    void readStatus(uint8_t registerAddress, uint8_t& value);
 
-    void spiWriteRegister(uint8_t sel_pin, uint32_t value);
-
-    void loadStatusReg(uint8_t instructionCode);
-
-    void loadProtectRegister(uint8_t instructionCode);
-
-    void loadConfigRegister(uint8_t instructionCode);
+private:
+    W25nTransport _transport;
 };
