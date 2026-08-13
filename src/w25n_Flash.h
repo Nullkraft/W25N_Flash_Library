@@ -11,7 +11,7 @@ public:
 
     void begin();
     void readJedecId(uint8_t& manufacturerId, uint16_t& deviceId);
-    void readStatus(uint8_t registerAddress, uint8_t& value);
+    void readStatus(uint8_t registerAddress, uint8_t* value);
 
 private:
     W25nTransport _transport;
