@@ -23,9 +23,9 @@ void W25N_Flash::readJedecId(uint8_t& manufacturerId, uint16_t& deviceId)
     deviceId = (static_cast<uint16_t>(id[1]) << 8) | id[2];
 }
 
-void W25N_Flash::readStatus(uint8_t registerAddress, uint8_t& value)
+void W25N_Flash::readStatus(uint8_t registerAddress, uint8_t* value)
 {
     const uint8_t command[] = {CmdReadRegisters, registerAddress};
 
-    _transport.transfer(command, sizeof(command), nullptr, 0U, &value, 1U);
+    _transport.transfer(command, sizeof(command), nullptr, 0U, value, 1U);
 }

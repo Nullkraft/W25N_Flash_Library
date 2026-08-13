@@ -19,8 +19,8 @@ void setup()
     SPI.begin();
     flash.begin();
     flash.readJedecId(manufacturerId, deviceId);
-    flash.readStatus(RegAddrProtect, protection);
-    flash.readStatus(RegAddrConfigure, configuration);
+    flash.readStatus(RegAddrProtect, &protection);
+    flash.readStatus(RegAddrConfigure, &configuration);
 
     Serial.print("Manufacturer ID: 0x");
     Serial.println(manufacturerId, HEX);
