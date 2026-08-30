@@ -13,8 +13,8 @@ W25nTransport::W25nTransport(uint8_t csPin, SPIClass& spi)
 
 void W25nTransport::begin()
 {
-    pinMode(_csPin, OUTPUT);
-    digitalWrite(_csPin, HIGH);
+    // pinMode(_csPin, OUTPUT);
+    // digitalWrite(_csPin, HIGH);
 }
 
 void W25nTransport::transfer(const uint8_t* command, size_t commandLength,
@@ -22,7 +22,7 @@ void W25nTransport::transfer(const uint8_t* command, size_t commandLength,
                              uint8_t* readData, size_t readLength)
 {
     _spi.beginTransaction(SPISettings(W25N_SPI_CLOCK_HZ, MSBFIRST, SPI_MODE0));
-    digitalWrite(_csPin, LOW);
+    // digitalWrite(_csPin, LOW);
 
     for (size_t i = 0; i < commandLength; ++i) {
         _spi.transfer(command[i]);
@@ -34,6 +34,6 @@ void W25nTransport::transfer(const uint8_t* command, size_t commandLength,
         readData[i] = _spi.transfer(0U);
     }
 
-    digitalWrite(_csPin, HIGH);
+    // digitalWrite(_csPin, HIGH);
     _spi.endTransaction();
 }
