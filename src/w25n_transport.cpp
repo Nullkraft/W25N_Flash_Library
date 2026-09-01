@@ -13,7 +13,7 @@ W25nTransport::W25nTransport(uint8_t csPin, SPIClass& spi)
 
 void W25nTransport::begin()
 {
-    pinMode(_csPin, OUTPUT);
+    // pinMode(_csPin, OUTPUT);
     digitalWrite(_csPin, HIGH);
 }
 
