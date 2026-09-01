@@ -7,7 +7,7 @@
 
 class W25nTransport {
 public:
-    W25nTransport(uint8_t csPin, SPIClass& spi);
+    W25nTransport(SPIClass& spi);
 
     void begin();
     void transfer(const uint8_t* command, size_t commandLength,
@@ -15,6 +15,5 @@ public:
                   uint8_t* readData, size_t readLength);
 
 private:
-    uint8_t _csPin;
     SPIClass& _spi;
 };

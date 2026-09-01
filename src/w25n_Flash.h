@@ -7,7 +7,7 @@
 
 class W25N_Flash {
 public:
-    explicit W25N_Flash(uint8_t csPin, SPIClass& spi = SPI);
+    explicit W25N_Flash(SPIClass& spi = SPI);
 
     void begin();
     void readJedecId(uint8_t& manufacturerId, uint16_t& deviceId);

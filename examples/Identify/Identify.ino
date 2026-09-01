@@ -6,7 +6,7 @@ constexpr uint8_t FLASH_MOSI_PIN = MOSI;
 constexpr uint8_t FLASH_MISO_PIN = MISO;
 constexpr uint8_t FLASH_SCK_PIN  = SCK;
 
-W25N_Flash flash(FLASH_CS_PIN, SPI);
+W25N_Flash flash(SPI);
 
 void setup()
 {

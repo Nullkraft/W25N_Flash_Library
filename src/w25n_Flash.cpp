@@ -1,7 +1,7 @@
 #include "w25n_Flash.h"
 
-W25N_Flash::W25N_Flash(uint8_t csPin, SPIClass& spi)
-    : _transport(csPin, spi)
+W25N_Flash::W25N_Flash(SPIClass& spi)
+    : _transport(spi)
 {
 }
 
@@ -17,7 +17,6 @@ void W25N_Flash::readJedecId(uint8_t& manufacturerId, uint16_t& deviceId)
         static_cast<uint8_t>(CmdJededId),
     };
     uint8_t id[3];
-
     _transport.transfer(command, sizeof(command), nullptr, 0U, id, sizeof(id));
     manufacturerId = id[0];
     deviceId = (static_cast<uint16_t>(id[1]) << 8) | id[2];
